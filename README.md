@@ -39,8 +39,8 @@ Antes disso, foram sete anos dentro de provedores, do lado de quem instala e de 
 ![Proxmox](https://img.shields.io/badge/Proxmox-284233?style=flat-square&logo=proxmox&logoColor=BED5C7)
 ![Docker](https://img.shields.io/badge/Docker-284233?style=flat-square&logo=docker&logoColor=BED5C7)
 ![MikroTik](https://img.shields.io/badge/MikroTik%20RouterOS-284233?style=flat-square&logo=mikrotik&logoColor=BED5C7)
-![Zabbix](https://img.shields.io/badge/Zabbix-284233?style=flat-square&logo=zabbix&logoColor=BED5C7)
 ![Grafana](https://img.shields.io/badge/Grafana-284233?style=flat-square&logo=grafana&logoColor=BED5C7)
+![Zabbix](https://img.shields.io/badge/Zabbix-284233?style=flat-square&labelColor=284233)
 
 <br>
 
