@@ -1,72 +1,114 @@
-# Configuração segura do painel de atividade
+# Ativação do painel de contribuições privadas — GitHub
 
-O README do perfil publica **somente estatísticas agregadas**. O código-fonte,
-nomes de repositórios privados, títulos de issues, mensagens de commits,
-endereços de e-mail e hashes não são enviados ao SVG.
+## Estado atual
 
-## 1. Exibir contribuições privadas no perfil nativo
+O README público já apresenta um **retrato de atividade observada até 23/10/2026**.
+Esse retrato identifica commits presentes em repositórios associados à conta;
+ele não garante que todos tenham sido criados pelo titular e não representa
+uma contagem completa (limite de 100 commits por repositório na consulta inicial).
 
-1. Acesse [seu perfil](https://github.com/caiocezar-dev).
-2. No calendário de contribuições, abra **Contribution settings**.
-3. Ative **Private contributions**.
+A implementação definitiva usa a API GraphQL do GitHub para mostrar
+**contribuições elegíveis creditadas ao titular do perfil** em uma janela
+móvel dos últimos 12 meses, inclusive privadas quando autorizadas.
 
-Essa opção mostra contagens anônimas por dia, não o nome dos repositórios.
+**A ativação precisa de duas autorizações feitas pelo titular no GitHub:**
+marcar a opção de contribuições privadas e criar o secret de leitura.
+A integração GitHub usada para editar os arquivos não dispõe de permissões
+para essas duas alterações nas configurações da conta.
 
-## 2. Gerar token de leitura
+## A. Habilitar contribuição privada no perfil nativo
 
-1. Acesse [Personal access tokens (classic)](https://github.com/settings/tokens).
-2. Crie um token com expiração e **somente o escopo `read:user`**.
-3. Não conceda o escopo `repo`: o gerador local consulta apenas
-   `contributionsCollection` da API GraphQL e não lê repositórios.
-4. Não cole o token no README, em commits, issues ou mensagens de chat.
+1. Abra https://github.com/caiocezar-dev
+2. Acima do calendário, clique em **Contribution settings**.
+3. Selecione **Private contributions**.
 
-**Nota:** a [documentação GraphQL do GitHub](https://docs.github.com/en/graphql/reference/users#contributionscollection)
-identifica `read:user` como o escopo para contabilizar contribuições privadas e internas.
+Essa escolha mostra contagens anônimas. Nomes de repositórios privados,
+mensagens, hashes e código-fonte continuam ocultos.
 
-## 3. Salvar o secret no repositório público de perfil
+Referência:
+https://docs.github.com/en/account-and-profile/how-tos/contribution-settings/manage-visibility-settings-for-private-contributions-and-achievements
 
-1. Abra [Settings → Secrets and variables → Actions](https://github.com/caiocezar-dev/caiocezar-dev/settings/secrets/actions).
+## B. Criar uma credencial com privilégio mínimo
+
+1. Acesse https://github.com/settings/tokens
+2. Escolha **Generate new token (classic)**.
+3. Defina uma expiração apropriada (ex.: 90 dias) e selecione **somente**
+   o escopo `read:user`.
+4. Não selecione `repo`, `workflow` nem permissões de escrita.
+5. Copie o token diretamente para o secret abaixo e descarte qualquer
+   cópia em arquivos, prints ou mensagens.
+
+A documentação GraphQL informa que contribuições privadas são incluídas
+com o escopo opcional `read:user`:
+https://docs.github.com/en/graphql/reference/users#contributionscollection
+
+**Atenção:** ao expirar, o token terá que ser renovado. Um token criado
+por outra conta não será aceito: o coletor valida `viewer.login`.
+
+## C. Cadastrar o token como secret
+
+1. Abra https://github.com/caiocezar-dev/caiocezar-dev/settings/secrets/actions
 2. Clique em **New repository secret**.
-3. Nome: `PROFILE_STATS_TOKEN`.
-4. Valor: o token criado anteriormente.
+3. Preencha:
+   - **Name:** `PROFILE_STATS_TOKEN`
+   - **Secret:** token gerado no passo B.
+4. Salve. O valor não deve ser incluído em nenhum arquivo versionado.
 
-Os GitHub Actions usam esse secret somente durante a execução e não o gravam
-nos artefatos de publicação.
+O workflow `.github/workflows/activity.yml` lê o secret somente para
+identificar a disponibilidade da credencial e executar a consulta autenticada.
+O SVG contém **apenas contagens e frequência de contribuição**.
 
-## 4. Gerar o dashboard
+## D. Executar e validar
 
-1. Abra [Actions](https://github.com/caiocezar-dev/caiocezar-dev/actions).
-2. Selecione **Atualizar painel de atividade**.
-3. Use **Run workflow** na branch principal (`main`).
-4. Confira se o workflow terminou com sucesso.
-5. Verifique o arquivo [assets/activity.svg](../assets/activity.svg).
+1. Acesse https://github.com/caiocezar-dev/caiocezar-dev/actions
+2. Selecione **Atualizar painel de atividade** e clique em **Run workflow**
+   na branch `main`.
+3. Confirme no log as etapas:
+   - Validar gerador e segurança
+   - Verificar credencial configurada
+   - Gerar estatísticas pessoais autorizadas
+   - Publicar somente o painel atualizado
+4. Visualize o README: https://github.com/caiocezar-dev
 
-Depois da primeira execução, o workflow tenta atualizar automaticamente o
-cartão uma vez ao dia. Se a configuração estiver incompleta, ele preserva
-o SVG anterior e não inventa números.
+Depois da primeira execução bem-sucedida, o SVG é atualizado diariamente
+às **09:15 UTC (06:15 BRT)**, sujeito à disponibilidade e política
+do GitHub Actions.
 
-## Interpretação das métricas
+**Falha segura:** se faltar token, houver erro de autenticação, incompatibilidade
+de titular ou dados inválidos, o arquivo anterior é preservado. Uma execução
+manual sem secret encerra com erro explícito; execuções agendadas sem o secret
+apenas registram um aviso e não publicam dados fictícios.
 
-- **Commits / 12 meses:** `totalCommitContributions` da API GraphQL.
-- **Contribuições:** `contributionCalendar.totalContributions`, que reúne
-  diferentes atividades; não é sinônimo de número de commits.
-- **Pull requests / Issues:** contagens elegíveis segundo as regras do GitHub.
-- **Calendário:** número de contribuições por dia, sem detalhes do repositório.
+## Como interpretar os números
 
-Commits podem não ser contados caso o e-mail do autor não esteja associado
-ao GitHub ou o commit não esteja na branch principal/`gh-pages`, conforme
-[critérios oficiais](https://docs.github.com/en/account-and-profile/reference/profile-contributions-reference).
+| Indicador | Fonte | Significado |
+| --- | --- | --- |
+| Commits / 12 meses | `totalCommitContributions` | Commits elegíveis atribuídos ao titular |
+| Contribuições | `contributionCalendar.totalContributions` | Atividades elegíveis de diferentes tipos, não apenas commits |
+| Repos com commits | `totalRepositoriesWithContributedCommits` | Quantidade de repositórios com commits elegíveis, sem nomes |
+| Pull requests | `totalPullRequestContributions` | Pull requests abertas pelo titular |
+| Calendário | `contributionDays` | Atividades atribuídas em cada dia |
 
-### Diagnóstico
+Contribuições de forks, branch não padrão ou commits com e-mail não
+vinculado à conta podem ficar fora do calendário, conforme as regras
+do GitHub:
+https://docs.github.com/en/account-and-profile/reference/profile-contributions-reference
 
-| Sintoma | O que verificar |
+## Diagnóstico e governança
+
+| Cenário | Procedimento |
 | --- | --- |
-| O SVG continua com mensagem de configuração | Se o secret `PROFILE_STATS_TOKEN` foi salvo e o workflow foi executado |
-| O workflow não consegue consultar a API | Expiração do token e escopo `read:user` |
-| Repositórios privados não aparecem na contagem | `Contribution settings → Private contributions` e autor dos commits |
-| O workflow gera o SVG, mas não faz push | Permissão `contents: write`, proteção de branch e política de Actions |
-| Dados parecem incompletos | Regras de elegibilidade, data dos commits e janela dos últimos 12 meses |
+| O SVG ainda mostra “atividade observada” | Executar workflow manual após configurar o token |
+| `PROFILE_STATS_TOKEN` ausente | Criar o secret conforme C |
+| Token pertence a outro usuário | Emitir token na conta `caiocezar-dev` |
+| Falha de autenticação | Renovar token e confirmar escopo `read:user` |
+| Workflow executa, mas o push falha | Revisar proteção de branch e permissão `contents: write` |
+| Contagens diferem da consulta anterior | É esperado: consulta antiga amostrava commits de repositórios; nova conta contribuições pessoais elegíveis |
+| Dados de dias anteriores ausentes | Conferir e-mail do autor, branch padrão, critérios de elegibilidade e UTC |
 
-**Privacidade:** um contador público pode revelar volume e frequência de
-trabalho, embora não revele o conteúdo dos projetos. Desative a automação
-e/ou a opção de contribuições privadas se não desejar expor esses totais.
+**Privacidade:** o dashboard público revela apenas volume/frequência agregados.
+Se não quiser essa exposição, desabilite o workflow e remova o SVG do README.
+
+Código-fonte: [gerador](../scripts/build_activity_svg.py),
+[workflow](../.github/workflows/activity.yml) e
+[testes](../tests/test_profile_activity.py).
