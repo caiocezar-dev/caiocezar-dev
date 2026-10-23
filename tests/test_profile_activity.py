@@ -52,9 +52,29 @@ class GitHubActivityTests(unittest.TestCase):
         self.assertIn("<svg", svg)
         self.assertIn("2199".replace("2199", "2.199"), svg)
         self.assertIn("REPOS COM COMMITS", svg)
-        self.assertIn("23/10/2026 18:20 UTC", svg)
+        self.assertIn("23/10/2026 UTC", svg)
         self.assertTrue(svg.rstrip().endswith("</svg>"))
         self.assertNotIn("token-test", svg)
+
+    def test_same_day_no_metrics_change_stable_svg(self):
+        data = fixture_data()
+        morning = activity.render(
+            data, generated_at=datetime(2026, 10, 23, 6, 17, tzinfo=timezone.utc)
+        )
+        evening = activity.render(
+            data, generated_at=datetime(2026, 10, 23, 21, 17, tzinfo=timezone.utc)
+        )
+        self.assertEqual(morning, evening)
+
+    def test_next_day_refreshes_date(self):
+        data = fixture_data()
+        today = activity.render(
+            data, generated_at=datetime(2026, 10, 23, tzinfo=timezone.utc)
+        )
+        tomorrow = activity.render(
+            data, generated_at=datetime(2026, 10, 24, tzinfo=timezone.utc)
+        )
+        self.assertNotEqual(today, tomorrow)
 
     def test_rejects_calendar_without_full_year(self):
         data = fixture_data()
