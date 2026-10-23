@@ -1,70 +1,76 @@
-# Plano de implantação — atividade de commits no perfil GitHub
+# Plano de execução e validação — Perfil GitHub
 
-**Titular:** `caiocezar-dev`
-**Repositório de apresentação:** `caiocezar-dev/caiocezar-dev`
-**Objetivo:** publicar indicadores confiáveis da atividade pessoal no GitHub,
-com contribuições privadas elegíveis e sem divulgação de informações dos projetos.
+**Repositório:** `caiocezar-dev/caiocezar-dev`
+**Objetivo:** substituir dashboard amostrado de outubro por dados pessoais oficiais dos
+últimos 12 meses, com atualização automática e proteção dos projetos privados.
 
-## Critérios de aceite
+## Problema identificado
 
-- O README permanece público, legível, com identidade visual da Arcis.
-- O painel mostra commits pessoais elegíveis, contribuições agregadas, PRs
-  e quantidade de repositórios com commits nos últimos 12 meses.
-- O calendário utiliza dados diários provenientes da API oficial do GitHub.
-- Nenhum nome de repositório privado, mensagem de commit, arquivo, e-mail ou
-  token é gravado em arquivos públicos, SVG ou logs intencionalmente.
-- Qualquer ausência de credencial ou erro de coleta preserva a versão anterior.
-- A rotina diária e a execução manual usam o mesmo script.
-- O README distingue o retrato inicial (amostrado) do painel definitivo
-  (contribuições efetivamente creditadas ao usuário).
-
-## Execução por fase
-
-| Fase | Entrega / evidência | Status |
+| Item | Implementação anterior | Implementação corrigida |
 | --- | --- | --- |
-| 0. Auditoria | README, SVG, gerador, workflow e documentação inspecionados | Concluído |
-| 1. Fontes | Métricas GraphQL oficiais; escopo mínimo `read:user` | Concluído |
-| 2. Proteção | Validação de `viewer.login`, métricas, datas e preservação do SVG | Implementado |
-| 3. Qualidade | Testes automáticos sem rede e validação em GitHub Actions | Testes implementados; resultado de CI ainda não aferido |
-| 4. Entrega | Script, workflow, documentação e README versionados em `main` | Implementado |
-| 5. Autorização | Mostrar contribuições privadas e cadastrar o token em secret | Pendente de ação autenticada do titular |
-| 6. Go-live | Executar workflow manual, conferir logs e conferir SVG publicado | Pendente da fase 5 |
-| 7. Operação | Atualização agendada diariamente, sujeita à plataforma | Configurada; aguarda ativação |
+| Fontes | Busca de até 100 commits por repositório | GraphQL `viewer.contributionsCollection` |
+| Identidade | Poderia incluir colaboradores e bots | Apenas contribuições creditadas à conta autenticada |
+| Escopo | Outubro/2026 (amostragem) | Calendário anual móvel do GitHub |
+| Total | ≥377 commits encontrados | Total de contribuições e commits elegíveis, separados |
+| Frequência | Snapshot manual ou rotina diária | GitHub Actions a cada 6 horas |
+| Segurança | Sem dados dos repositórios, mas contagem ambígua | Token mínimo `read:user`, dados agregados e validação de identidade |
+| Gráficos | Barras diárias de outubro | Calendário 12 meses + evolução mensal |
+| Testes | Testes com calendário de uma semana | Casos com calendário anual e falhas de coleta |
 
-## Dependências que não podem ser automatizadas pelo conector disponível
+O GitHub nativo mostrou 3.696 contribuições na captura de 23/10/2026.
+Esse valor é observação histórica, nunca uma constante embutida no script.
+É esperado que a cifra atual se altere continuamente.
 
-1. Em https://github.com/caiocezar-dev, marcar
-   **Contribution settings → Private contributions**.
-2. Em https://github.com/settings/tokens, criar PAT (classic)
-   da conta titular com somente `read:user`.
-3. Em
-   https://github.com/caiocezar-dev/caiocezar-dev/settings/secrets/actions,
-   cadastrar o PAT como `PROFILE_STATS_TOKEN`.
-4. Em https://github.com/caiocezar-dev/caiocezar-dev/actions,
-   selecionar o workflow e executar **Run workflow** na `main`.
+## Etapas de implantação
 
-**Regra de segurança:** nunca enviar a credencial por chat, issues,
-commits ou qualquer outro canal externo; usar somente o formulário
-seguro de secrets do GitHub.
+| Fase | Critério de aceite | Estado |
+| --- | --- | --- |
+| 1. Analisar origem da divergência | Período e definição da métrica identificados | Concluído |
+| 2. Reescrever coletor | GraphQL autenticado, `viewer.login`, schema validado | Implementado |
+| 3. Refazer layout | KPIs, calendário anual, gráfico mensal, timestamp | Implementado |
+| 4. Automação | Disparo a cada 6 horas e manual, publicação restrita ao SVG | Implementado |
+| 5. Testes | Testes unitários em PR e na branch principal | Implementados; CI pendente de comprovação |
+| 6. Habilitar credencial | `PROFILE_STATS_TOKEN` secret com `read:user` | Pendente de configuração do titular, se ainda não realizado |
+| 7. Go-live | Workflow autenticado com SVG real e execução bem-sucedida | Pendente de verificação |
+| 8. Operação | Falha segura, renovação do token e monitoramento de Actions | Procedimento documentado |
 
-## Operação e manutenção
+## Arquitetura de execução
 
-- Rotina: GitHub Actions `activity.yml` com agendamento diário às 09:15 UTC.
-- Fonte de dados: `contributionsCollection` via GitHub GraphQL.
-- Publicação: `assets/activity.svg`, sem consultas no navegador do visitante.
-- Falha operacional: manter o último painel válido e sinalizar erro no Actions.
-- Renovação: quando o token expirar, atualizar somente o secret.
-- Critério de divulgação: números públicos agregados, nunca detalhes privados.
+```text
+GitHub Actions (schedule / manual)
+  ├── Checkout
+  ├── Python py_compile + unittest
+  ├── PROFILE_STATS_TOKEN (repository secret)
+  │    └── GraphQL viewer.contributionsCollection
+  │          ├── Confere viewer.login
+  │          ├── Valida campos e calendário anual
+  │          └── Deriva KPIs e séries
+  └── Renderização SVG
+         ├── Grava em arquivo temporário
+         ├── Substitui assets/activity.svg atomically
+         └── Commit apenas se houver diff
+```
 
-## Auditoria de números iniciais
+O `GITHUB_TOKEN` do Actions é usado somente para gravar o SVG na
+branch `main`, e o PAT `read:user` somente para consultar o GitHub.
 
-O SVG anterior foi produzido de uma **amostra** de até 100 commits recentes
-por repositório e inclui potencialmente coautores e automações. Por isso seus
-totais não podem ser tratados como commits pessoais definitivos nem
-comparados diretamente com o campo `totalCommitContributions`.
+## Critérios de segurança
 
-A única certificação de que o novo painel está ativo é uma execução
-bem-sucedida do workflow **com token configurado**, seguida da inspeção
-do SVG atualizado e dos resultados de testes.
+- Não ler nomes de repositórios privados.
+- Não publicar commits, hashes, conteúdo de PRs, mensagens nem dados de terceiros.
+- Não ecoar segredos nos logs, nem salvá-los no repositório.
+- Não transformar erro de API em métricas inventadas.
+- Falhar quando token pertence a outra conta.
+- Preservar o SVG válido anterior em caso de problema.
+- Marcar métricas brutas de amostragem como obsoletas.
 
-[Procedimento operacional completo](./PROFILE_STATS_SETUP.md)
+## Aceite operacional final
+
+Somente marcar como concluído após:
+1. `PROFILE_STATS_TOKEN` existir no secret;
+2. Primeira execução manual autenticada terminar sem erro;
+3. O SVG mostrar números obtidos do GraphQL (não placeholders);
+4. O README mostrar a atualização real e a data de sincronização;
+5. Os testes e a rotina automática estarem funcionando.
+
+[Procedimento de ativação](./PROFILE_STATS_SETUP.md)
