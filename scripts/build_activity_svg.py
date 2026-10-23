@@ -152,7 +152,8 @@ def render(data: dict, generated_at: datetime | None = None) -> str:
     generated_at = generated_at or datetime.now(timezone.utc)
     if generated_at.tzinfo is None:
         raise ValueError("Timestamp deve conter fuso horário.")
-    updated = generated_at.astimezone(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
+    # Um SVG diário só muda dentro do dia quando as métricas mudam.
+    updated = generated_at.astimezone(timezone.utc).strftime("%d/%m/%Y UTC")
 
     calendar = data["contributionCalendar"]
     weeks = calendar["weeks"]
