@@ -3,38 +3,68 @@ name: Atualizar painel de atividade
 on:
   workflow_dispatch:
   schedule:
-    # 09:15 UTC (06:15 em Recife), diariamente
+    # Diário às 09:15 UTC (06:15 no horário de Recife)
     - cron: "15 9 * * *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/build_activity_svg.py
+      - tests/test_profile_activity.py
+      - .github/workflows/activity.yml
 
 permissions:
   contents: write
 
+concurrency:
+  group: profile-activity
+  cancel-in-progress: false
+
 jobs:
   activity:
     runs-on: ubuntu-latest
-    env:
-      PROFILE_STATS_TOKEN: ${{ secrets.PROFILE_STATS_TOKEN }}
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verificar configuração
-        if: env.PROFILE_STATS_TOKEN == ''
-        run: echo "::notice::Configure o secret PROFILE_STATS_TOKEN para incluir contribuições privadas."
+      - name: Validar gerador e segurança
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
 
-      - name: Gerar SVG a partir de métricas agregadas
-        if: env.PROFILE_STATS_TOKEN != ''
+      - name: Verificar credencial configurada
+        id: access
+        env:
+          PROFILE_STATS_TOKEN: ${{ secrets.PROFILE_STATS_TOKEN }}
+        shell: bash
+        run: |
+          if [ -n "$PROFILE_STATS_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Secret PROFILE_STATS_TOKEN ausente. O SVG anterior será preservado."
+          fi
+
+      - name: Validar configuração para execução manual
+        if: steps.access.outputs.ready != 'true' && github.event_name == 'workflow_dispatch'
+        run: |
+          echo "::error::Configure PROFILE_STATS_TOKEN com read:user antes de executar manualmente."
+          exit 1
+
+      - name: Gerar estatísticas pessoais autorizadas
+        if: steps.access.outputs.ready == 'true'
+        env:
+          PROFILE_STATS_TOKEN: ${{ secrets.PROFILE_STATS_TOKEN }}
         run: python3 scripts/build_activity_svg.py
 
-      - name: Publicar painel atualizado
-        if: env.PROFILE_STATS_TOKEN != ''
+      - name: Publicar somente o painel atualizado
+        if: steps.access.outputs.ready == 'true'
+        shell: bash
         run: |
           if git diff --quiet -- assets/activity.svg; then
-            echo "Nenhuma mudança nos dados."
+            echo "Sem alterações nas estatísticas."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/activity.svg
-          git commit -m "chore(profile): atualizar estatísticas agregadas"
+          git commit -m "chore(profile): atualizar contribuições elegíveis"
           git push
