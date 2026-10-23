@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="310" viewBox="0 0 960 310" role="img" aria-labelledby="title desc">
+<title id="title">Atividade do GitHub - configuração pendente</title>
+<desc id="desc">O painel será atualizado com estatísticas agregadas assim que a configuração de contribuições privadas for concluída.</desc>
+<rect width="960" height="310" rx="18" fill="#071B13"/>
+<rect x="1" y="1" width="958" height="308" rx="17" fill="none" stroke="#315743" stroke-width="2"/>
+<text x="45" y="68" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="700" fill="#95CDA9">GITHUB / ATIVIDADE</text>
+<text x="45" y="125" font-family="Arial,Helvetica,sans-serif" font-size="30" font-weight="700" fill="#F1F8F3">Painel de contribuições</text>
+<text x="45" y="175" font-family="Arial,Helvetica,sans-serif" font-size="20" fill="#C0D8C8">Aguardando autorização para consultar estatísticas privadas agregadas.</text>
+<text x="45" y="210" font-family="Arial,Helvetica,sans-serif" font-size="17" fill="#95CDA9">Nenhum código, nome de repositório ou commit privado será publicado.</text>
+<path d="M45 246H915" stroke="#315743"/>
+<text x="45" y="277" font-family="Arial,Helvetica,sans-serif" font-size="15" fill="#C0D8C8">Instruções: docs/PROFILE_STATS_SETUP.md</text>
+</svg>
