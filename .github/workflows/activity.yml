@@ -2,69 +2,95 @@ name: Atualizar painel de atividade
 
 on:
   workflow_dispatch:
-  schedule:
-    # Diário às 09:15 UTC (06:15 no horário de Recife)
-    - cron: "15 9 * * *"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/build_activity_svg.py"
+      - "tests/test_profile_activity.py"
+      - ".github/workflows/activity.yml"
   push:
     branches: [main]
     paths:
-      - scripts/build_activity_svg.py
-      - tests/test_profile_activity.py
-      - .github/workflows/activity.yml
+      - "scripts/build_activity_svg.py"
+      - "tests/test_profile_activity.py"
+      - ".github/workflows/activity.yml"
+  schedule:
+    # A cada 6 horas: 00:17, 06:17, 12:17 e 18:17 em Recife (UTC-3)
+    - cron: "17 3,9,15,21 * * *"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: profile-activity
+  group: profile-activity-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  activity:
+  tests:
+    name: Testes e validação de privacidade
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout
+      - name: Checkout sem persistir credenciais
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validar sintaxe Python
+        run: python3 -m py_compile scripts/build_activity_svg.py tests/test_profile_activity.py
+      - name: Executar testes locais sem rede
+        run: python3 -m unittest discover -s tests -p "test_*.py" -v
 
-      - name: Validar gerador e segurança
-        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+  update:
+    name: Sincronizar painel autenticado
+    needs: tests
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout do branch principal
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
-      - name: Verificar credencial configurada
-        id: access
+      - name: Verificar token de leitura
+        id: token
         env:
           PROFILE_STATS_TOKEN: ${{ secrets.PROFILE_STATS_TOKEN }}
         shell: bash
         run: |
           if [ -n "$PROFILE_STATS_TOKEN" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "configured=true" >> "$GITHUB_OUTPUT"
           else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Secret PROFILE_STATS_TOKEN ausente. O SVG anterior será preservado."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::PROFILE_STATS_TOKEN ausente. Mantendo o último SVG disponível."
           fi
 
-      - name: Validar configuração para execução manual
-        if: steps.access.outputs.ready != 'true' && github.event_name == 'workflow_dispatch'
+      - name: Falhar explicitamente na execução manual sem credencial
+        if: steps.token.outputs.configured != 'true' && github.event_name == 'workflow_dispatch'
         run: |
-          echo "::error::Configure PROFILE_STATS_TOKEN com read:user antes de executar manualmente."
+          echo "::error::Configure PROFILE_STATS_TOKEN com read:user nas configurações de Actions Secrets."
           exit 1
 
-      - name: Gerar estatísticas pessoais autorizadas
-        if: steps.access.outputs.ready == 'true'
+      - name: Consultar GitHub GraphQL e gerar painel real
+        if: steps.token.outputs.configured == 'true'
         env:
           PROFILE_STATS_TOKEN: ${{ secrets.PROFILE_STATS_TOKEN }}
         run: python3 scripts/build_activity_svg.py
 
-      - name: Publicar somente o painel atualizado
-        if: steps.access.outputs.ready == 'true'
+      - name: Versionar somente o SVG atualizado
+        if: steps.token.outputs.configured == 'true'
         shell: bash
         run: |
           if git diff --quiet -- assets/activity.svg; then
-            echo "Sem alterações nas estatísticas."
+            echo "Nenhuma alteração no painel."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/activity.svg
-          git commit -m "chore(profile): atualizar contribuições elegíveis"
-          git push
+          git commit -m "chore(profile): sincronizar contribuições do GitHub"
+          git pull --rebase origin main
+          git push origin HEAD:main
