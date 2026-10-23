@@ -65,7 +65,7 @@ Minha trajetória inclui campo, suporte de segundo nível (N2), NOC e responsabi
 
 ![Painel de atividade e quantidade de commits](./assets/activity.svg)
 
-<sub>**Painel observado em 23/10/2026:** amostra de commits identificados nos repositórios associados à conta, com consulta limitada a 100 commits por repositório. Os totais são mínimos, podem incluir trabalho de colaboradores e automações e **não equivalem à quantidade de commits creditados pessoalmente pelo GitHub**. Os nomes e conteúdos de repositórios privados não são revelados. Para passar a exibir suas contribuições pessoais elegíveis e atualizar os dados automaticamente, consulte a [configuração do painel](./docs/PROFILE_STATS_SETUP.md).</sub>
+<sub>**Sobre os dados:** o painel inicial contém uma amostra de commits de repositórios, observada em 23/10/2026, que não equivale à autoria pessoal. Depois da primeira execução autenticada, o gráfico será substituído pelos números de contribuições **atribuídas à minha conta pelo GitHub** nos últimos 12 meses, com atualização diária. Nenhum repositório privado é identificado. Consulte a [configuração segura](./docs/PROFILE_STATS_SETUP.md) e o [plano de implantação](./docs/GITHUB_PROFILE_ACTIVITY_PLAN.md).</sub>
 
 ## Trajetória
 
