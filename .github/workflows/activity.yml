@@ -1,0 +1,40 @@
+name: Atualizar painel de atividade
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 09:15 UTC (06:15 em Recife), diariamente
+    - cron: "15 9 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  activity:
+    runs-on: ubuntu-latest
+    env:
+      PROFILE_STATS_TOKEN: ${{ secrets.PROFILE_STATS_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar configuração
+        if: env.PROFILE_STATS_TOKEN == ''
+        run: echo "::notice::Configure o secret PROFILE_STATS_TOKEN para incluir contribuições privadas."
+
+      - name: Gerar SVG a partir de métricas agregadas
+        if: env.PROFILE_STATS_TOKEN != ''
+        run: python3 scripts/build_activity_svg.py
+
+      - name: Publicar painel atualizado
+        if: env.PROFILE_STATS_TOKEN != ''
+        run: |
+          if git diff --quiet -- assets/activity.svg; then
+            echo "Nenhuma mudança nos dados."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/activity.svg
+          git commit -m "chore(profile): atualizar estatísticas agregadas"
+          git push
