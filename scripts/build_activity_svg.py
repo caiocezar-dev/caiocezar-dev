@@ -18,9 +18,11 @@ OWNER = os.environ.get("GITHUB_REPOSITORY_OWNER", "caiocezar-dev")
 OUTPUT = Path("assets/activity.svg")
 QUERY = """
 query($login: String!) {
+  viewer { login }
   user(login: $login) {
     contributionsCollection {
       totalCommitContributions
+      totalRepositoriesWithContributedCommits
       totalIssueContributions
       totalPullRequestContributions
       totalPullRequestReviewContributions
@@ -62,7 +64,13 @@ def fetch_activity() -> dict:
         raise SystemExit("Falha ao consultar a API GitHub; cartão preservado.") from exc
     if payload.get("errors") or not payload.get("data", {}).get("user"):
         raise SystemExit("GraphQL não retornou a coleção solicitada; cartão preservado.")
-    return payload["data"]["user"]["contributionsCollection"]
+    viewer = payload["data"].get("viewer") or {}
+    if viewer.get("login", "").casefold() != OWNER.casefold():
+        raise SystemExit("Token não pertence ao titular do perfil; cartão preservado.")
+    collection = payload["data"]["user"].get("contributionsCollection")
+    if not isinstance(collection, dict):
+        raise SystemExit("Dados de contribuições ausentes; cartão preservado.")
+    return collection
 
 
 def rect(x: int, y: int, w: int, h: int, color: str, radius: int = 0) -> str:
@@ -85,18 +93,33 @@ def render(data: dict) -> str:
     weeks = calendar["weeks"]
     if not weeks or not any(week["contributionDays"] for week in weeks):
         raise ValueError("Calendário vazio: cartão anterior preservado.")
+    # Rejeita métricas ou datas inválidas, em vez de publicar dados fictícios.
+    fields = ("totalCommitContributions", "totalIssueContributions",
+              "totalPullRequestContributions", "totalRepositoriesWithContributedCommits")
+    for name in fields:
+        value = data[name]
+        if type(value) is not int or value < 0:
+            raise ValueError(f"Métrica inválida: {name}")
+    if type(calendar["totalContributions"]) is not int or calendar["totalContributions"] < 0:
+        raise ValueError("Total do calendário inválido.")
+    for week in weeks:
+        for day in week["contributionDays"]:
+            date.fromisoformat(day["date"])
+            if type(day["contributionCount"]) is not int or day["contributionCount"] < 0:
+                raise ValueError("Contagem diária inválida.")
 
     stats = [
         ("COMMITS / 12 MESES", data["totalCommitContributions"]),
         ("CONTRIBUIÇÕES", calendar["totalContributions"]),
+        ("REPOS COM COMMITS", data["totalRepositoriesWithContributedCommits"]),
         ("PULL REQUESTS", data["totalPullRequestContributions"]),
-        ("ISSUES", data["totalIssueContributions"]),
     ]
     parts = [
         '<svg xmlns="http://www.w3.org/2000/svg" width="960" height="345" '
         'viewBox="0 0 960 345" role="img" aria-labelledby="title desc">',
         f'<title id="title">Atividade do GitHub de {escape(OWNER)}</title>',
-        '<desc id="desc">Estatísticas agregadas dos últimos doze meses. '
+        '<desc id="desc">Estatísticas de contribuições pessoais elegíveis '
+        'dos últimos doze meses, incluindo as privadas autorizadas. '
         'Não revela nomes ou conteúdos de repositórios privados.</desc>',
         rect(0, 0, 960, 345, "#071B13", 18),
         '<rect x="1" y="1" width="958" height="343" rx="17" '
@@ -134,7 +157,7 @@ def render(data: dict) -> str:
                     parts.append(text(x, 202, month_labels[d.month], 10, "#8EBFA2"))
                 last_month = d.month
     parts += [
-        text(32, 333, "Dados agregados. Repositórios privados permanecem confidenciais.", 12, "#A9CCB6"),
+        text(32, 333, "Contribuições elegíveis creditadas pelo GitHub; dados privados anonimizados.", 12, "#A9CCB6"),
         "</svg>",
     ]
     return "\n".join(parts) + "\n"
@@ -143,6 +166,7 @@ def render(data: dict) -> str:
 def main() -> None:
     data = fetch_activity()
     svg = render(data)
+    # O script jamais registra o token, resposta completa, nomes privados ou mensagens.
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(svg, encoding="utf-8")
     print("Painel SVG gerado: somente métricas agregadas (sem detalhes privados).")
