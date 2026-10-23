@@ -65,7 +65,7 @@ Minha trajetória inclui campo, suporte de segundo nível (N2), NOC e responsabi
 
 ![Painel de atividade e quantidade de commits](./assets/activity.svg)
 
-<sub>O painel apresenta commits elegíveis, contribuições, pull requests, issues e atividade diária em uma janela móvel de 12 meses. Projetos privados não são identificados. Para ativar a contagem autenticada de contribuições privadas, consulte a [configuração do painel](./docs/PROFILE_STATS_SETUP.md).</sub>
+<sub>**Painel observado em 23/10/2026:** amostra de commits identificados nos repositórios associados à conta, com consulta limitada a 100 commits por repositório. Os totais são mínimos, podem incluir trabalho de colaboradores e automações e **não equivalem à quantidade de commits creditados pessoalmente pelo GitHub**. Os nomes e conteúdos de repositórios privados não são revelados. Para passar a exibir suas contribuições pessoais elegíveis e atualizar os dados automaticamente, consulte a [configuração do painel](./docs/PROFILE_STATS_SETUP.md).</sub>
 
 ## Trajetória
 
