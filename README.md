@@ -63,9 +63,20 @@ Minha trajetória inclui campo, suporte de segundo nível (N2), NOC e responsabi
 
 ## Atividade no GitHub
 
-![Painel de atividade e quantidade de commits](./assets/activity.svg)
+O painel abaixo utiliza a **API GraphQL oficial do GitHub** para apresentar minha atividade profissional e de desenvolvimento nos **últimos 12 meses**. Depois da primeira sincronização autenticada, os dados são atualizados automaticamente a cada seis horas.
 
-<sub>**Sobre os dados:** o painel inicial contém uma amostra de commits de repositórios, observada em 23/10/2026, que não equivale à autoria pessoal. Depois da primeira execução autenticada, o gráfico será substituído pelos números de contribuições **atribuídas à minha conta pelo GitHub** nos últimos 12 meses, com atualização diária. Nenhum repositório privado é identificado. Consulte a [configuração segura](./docs/PROFILE_STATS_SETUP.md) e o [plano de implantação](./docs/GITHUB_PROFILE_ACTIVITY_PLAN.md).</sub>
+![Dashboard de contribuições pessoais do GitHub](./assets/activity.svg)
+
+**Indicadores:** contribuições totais, commits elegíveis atribuídos à minha conta, pull requests, issues, code reviews, repositórios com commits, dias ativos, atividade nos últimos 7/30 dias, calendário anual e volume por mês.
+
+<sub>Os números vêm do calendário oficial de contribuições, não de uma amostra de commits por repositório. Atividades privadas podem ser incluídas com autorização, **sem publicar o nome nem o conteúdo dos projetos**. O painel preserva o último resultado válido em caso de falha. A configuração da primeira sincronização está descrita em [Ativar estatísticas privadas](./docs/PROFILE_STATS_SETUP.md). Veja também o [plano de implantação](./docs/GITHUB_PROFILE_ACTIVITY_PLAN.md).</sub>
+
+<details>
+<summary><strong>Por que contribuições e commits têm números diferentes?</strong></summary>
+
+O calendário de contribuições contabiliza diferentes atividades elegíveis, incluindo commits, issues, pull requests e revisões. A contagem de commits segue as regras de autoria e elegibilidade do próprio GitHub; portanto, não equivale ao número bruto de commits encontrados em todos os repositórios.
+
+</details>
 
 ## Trajetória
 
